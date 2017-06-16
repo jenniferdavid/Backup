@@ -1,0 +1,1 @@
+/usr/bin/c++  -fPIC   -O2 -DNDEBUG -Wall     -shared -Wl,-soname,pioneer_flocking.so -o pioneer_flocking.so CMakeFiles/pioneer_flocking.dir/pioneer_flocking.o ../../libstage/libstage.so.4.1.1 -lGLU -lGL -lSM -lICE -lX11 -lXext -lltdl -ljpeg -lpng -lz -lfltk_images -lfltk_forms -lfltk_gl -lGL -lfltk -lSM -lICE -lX11 -lXext -lm -Wl,-rpath,/home/jendav/stage4/libstage: 

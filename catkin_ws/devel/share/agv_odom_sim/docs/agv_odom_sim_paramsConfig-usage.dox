@@ -1,0 +1,8 @@
+\subsubsection usage Usage
+\verbatim
+<node name="agv_odom_sim_node" pkg="agv_odom_sim" type="agv_odom_sim_node">
+  <param name="odom_noise_stddev_ratio_v" type="double" value="0.01" />
+  <param name="odom_noise_stddev_ratio_w" type="double" value="0.01" />
+</node>
+\endverbatim
+

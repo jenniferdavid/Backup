@@ -1,0 +1,43 @@
+<!-- Launches at local loop: local mapping and local planning -->
+
+<launch>
+
+    <!-- User Args  -->
+    <arg name="rviz" default="false" />  <!-- rviz visualization or not  -->
+    <arg name="truck" default="true" /> <!-- true->Real truck connected. false->Rosbag play  -->
+    
+    <!-- AT Local Mapping with rviz -->
+    <include file="$(find at_tests_real)/launch/at_local_mapping.launch">
+        <arg name="rviz" value="true"/>
+        <arg name="truck" value="$(arg truck)"/> 
+    </include>
+    
+    
+      <!-- AT Path Adaptor -->
+     <!-- node name="path_adaptor" pkg="cargo_ants_path_adaptor" type="at_path_adaptor" args="" output="screen" -->  <!-- 2 chomps any path-->
+     <node name="path_adaptor" pkg="cargo_ants_path_adaptor" type="at_path_adaptor_line" args="" output="screen">  <!-- 2 chomps straight line-->
+     <!-- node name="path_adaptor" pkg="cargo_ants_pa" type="at_pa_line" args="" output="screen" -->  <!-- 1 chomp straight line-->
+     <!-- node name="path_adaptor" pkg="cargo_ants_pa" type="at_pa" args="" output="screen" -->  <!-- old one working-->
+        <param name="lambda" value="10"/>     <!--  weight of smoothness objective (default value is 10)-->
+        <param name="num_Iterations" value="1000"/>     <!-- Number of interations in CHOMP -->
+        <param name="obs_cost_gain" value="10"/>     <!-- Gain inside cost function(default value is 10) -->
+        <param name="obs_inflation" value="2."/>  
+        <remap 
+            from="/obstacles"
+            to= "/$(env ROBOT)/local_mapping/obstacle_map"/>
+    </node> 
+    
+     
+     <!-- Send a goal (for testing) 
+     <node pkg="rostopic" type="rostopic" name="GoalPublisher"
+        args="pub -1 /path_planner cargo_ants_msgs/Path '{mode: 0, container: name , goals: [{gx: 0, gy: 0, gth: 0, dr: 0, dth: 0},{gx: 35, gy: 0., gth: 0, dr: 0, dth: 0}]}'" 
+        output="screen">   
+     </node>  -->
+     
+    <!-- AT Actuators (send trajetory to AutoBox) -->
+    <include file="$(find at_tests_real)/launch/at_actuators.launch">
+    </include>     
+     
+     
+</launch>
+

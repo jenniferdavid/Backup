@@ -1,0 +1,15 @@
+/home/jendav/stage4/examples/ctrl/CMakeFiles/dynamic.dir
+/home/jendav/stage4/worlds/benchmark/CMakeFiles/expand_pioneer.dir
+/home/jendav/stage4/worlds/benchmark/CMakeFiles/expand_swarm.dir
+/home/jendav/stage4/examples/ctrl/CMakeFiles/fasr.dir
+/home/jendav/stage4/examples/ctrl/CMakeFiles/fasr2.dir
+/home/jendav/stage4/examples/ctrl/CMakeFiles/lasernoise.dir
+/home/jendav/stage4/examples/ctrl/CMakeFiles/pioneer_flocking.dir
+/home/jendav/stage4/examples/ctrl/CMakeFiles/rasterize.dir
+/home/jendav/stage4/examples/ctrl/CMakeFiles/sink.dir
+/home/jendav/stage4/examples/ctrl/CMakeFiles/source.dir
+/home/jendav/stage4/libstage/CMakeFiles/stage.dir
+/home/jendav/stage4/libstage/CMakeFiles/stagebinary.dir
+/home/jendav/stage4/libstageplugin/CMakeFiles/stageplugin.dir
+/home/jendav/stage4/CMakeFiles/uninstall.dir
+/home/jendav/stage4/examples/ctrl/CMakeFiles/wander.dir

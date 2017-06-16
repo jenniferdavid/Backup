@@ -1,0 +1,77 @@
+<!-- Simulated AT and local mapping-->
+
+<launch>
+
+    <!-- Enable/disable visualization and other args -->
+    <arg name="plots" default="false" />
+    <arg name="rviz" default="false" />
+    <arg name="gazebo_gui" default="false" />
+    <arg name="world_model"  default="ground_with_barrel" />
+    <arg name="robot_model"  default="at" />
+    
+    <!-- test 01: gazebo world, at description, controllers, odometry and driver -->
+    <include file="$(find at_tests_sim)/launch/at_sim_01_drive.launch">
+            <arg name="gazebo_gui" value="$(arg gazebo_gui)"/> 
+            <arg name="world_model" value="$(arg world_model)"/>
+            <arg name="robot_model" value="$(arg robot_model)"/> 
+    </include>
+    
+    <!-- Run local mapping -->
+    <group ns="$(env ROBOT)">
+        <node   
+            pkg="cargo_ants_local_mapping"
+            type="local_mapping"
+            name="local_mapping"
+            args=""
+            output="screen">
+            <remap 
+                from="/$(env ROBOT)/local_mapping/odometry"
+                to="/at_odom_sim/odom" />
+            <remap 
+                from="/$(env ROBOT)/local_mapping/laser0"
+                to="/at/lidar0"/>
+            <remap 
+                from="/$(env ROBOT)/local_mapping/laser1"
+                to="/at/lidar2"/>
+            <remap 
+                from="/$(env ROBOT)/local_mapping/laser2"
+                to="/at/lidar3"/>
+            <rosparam 
+                command="load" 
+                file="$(find at_tests_sim)/config/at_iri_local_mapping.yaml"/>
+            <param 
+                name="~tf_prefix" 
+                value="/$(env ROBOT)" 
+                type="str"/>
+        </node>      
+    </group>
+    
+    <!-- AT Path Adaptor -->  
+    <node name="agv_path_adaptor" pkg="cargo_ants_path_adaptor" type="agv_path_adaptor" args="" output="screen">
+    <!--node name="at_path_adaptor" pkg="cargo_ants_pa" type="at_pa" args="" output="screen" -->
+        <param name="lambda" value="10"/>     <!--  weight of smoothness objective (default value is 10)-->
+        <param name="num_Iterations" value="100"/>     <!-- Number of interations in CHOMP -->
+        <param name="obs_cost_gain" value="10"/>     <!-- Gain inside cost function(default value is 10) -->
+        <param name="obs_inflation" value="4.0"/>  <!-- Obstacle inflation to account for vehicle size and safer margin(default value is 1meter)-->
+         <remap 
+            from="/obstacles"
+            to= "/$(env ROBOT)/local_mapping/obstacle_map"/>      
+    </node> 
+       
+     
+     <!-- Send a goal (for testing) -->
+    <node pkg="rostopic" type="rostopic" name="GoalPublisher"
+        args="pub -1 /path_planner cargo_ants_msgs/Path '{mode: 0, container: name , goals: [{gx: 0, gy: 0, gth: 0, dr: 0, dth: 0},{gx: 15, gy: 15, gth: 0, dr: 0, dth: 0}]}'" 
+        output="screen">   
+    </node> 
+    <!-- Run rviz node -->
+    <group if="$(arg rviz)">
+        <node   
+            pkg="rviz" 
+            type="rviz"
+            name="rviz"         
+            args="-d $(find at_tests_sim)/rviz/at_sim_03.rviz">
+        </node>
+    </group>
+    
+</launch>

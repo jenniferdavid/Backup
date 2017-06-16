@@ -1,0 +1,60 @@
+<!-- Simulated AT and local mapping-->
+
+<launch>
+
+    <!-- Enable/disable visualization and other args -->
+    <arg name="plots" default="false" />
+    <arg name="rviz" default="false" />
+    <arg name="gazebo_gui" default="false" />
+    <!-- arg name="world_model"  default="ground_with_3_containers" / -->
+    <arg name="world_model"  default="ground_with_barrel" />
+    <arg name="robot_model"  default="at" />
+    
+    <!-- test 01: gazebo world, at description, controllers, odometry and driver -->
+    <include file="$(find at_tests_sim)/launch/at_sim_01_drive.launch">
+            <arg name="gazebo_gui" value="$(arg gazebo_gui)"/> 
+            <arg name="world_model" value="$(arg world_model)"/>
+            <arg name="robot_model" value="$(arg robot_model)"/> 
+    </include>
+    
+    <!-- Run local mapping -->
+    <group ns="$(env ROBOT)">
+        <node   
+            pkg="cargo_ants_local_mapping"
+            type="local_mapping"
+            name="local_mapping"
+            args=""
+            output="screen">
+            <remap 
+                from="/$(env ROBOT)/local_mapping/odometry"
+                to="/at_odom_sim/odom" />
+            <remap 
+                from="/$(env ROBOT)/local_mapping/laser0"
+                to="/at/lidar0"/>
+            <remap 
+                from="/$(env ROBOT)/local_mapping/laser1"
+                to="/at/lidar2"/>
+            <remap 
+                from="/$(env ROBOT)/local_mapping/laser2"
+                to="/at/lidar3"/>
+            <rosparam 
+                command="load" 
+                file="$(find at_tests_sim)/config/at_local_mapping.yaml"/>
+            <param 
+                name="~tf_prefix" 
+                value="/$(env ROBOT)" 
+                type="str"/>
+        </node>      
+    </group>
+    
+    <!-- Run rviz node -->
+    <group if="$(arg rviz)">
+        <node   
+            pkg="rviz" 
+            type="rviz"
+            name="rviz"         
+            args="-d $(find at_gazebo)/rviz/$(arg world_model).rviz">
+        </node>
+    </group>
+    
+</launch>

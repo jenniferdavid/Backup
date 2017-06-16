@@ -1,0 +1,8 @@
+prefix=/home/jendav/catkin_ws/devel
+
+Name: cargo_ants_path_planner
+Description: Description of cargo_ants_path_planner
+Version: 0.0.0
+Cflags: 
+Libs: -L/home/jendav/catkin_ws/devel/lib 
+Requires: roscpp rospy std_msgs nav_msgs sensor_msgs tf cargo_ants_msgs nav_core roscpp rospy std_msgs

@@ -1,0 +1,63 @@
+<!-- Launches at sensor acquisition -->
+
+<launch>
+
+    <!-- User Args  -->
+    <arg name="rviz" default="true" /> <!-- rviz visualization or not  -->
+    <arg name="truck" default="true" /> <!-- true->Real truck connected. false->Rosbag play  -->
+    <arg name="camera" default="false" /> 
+    
+    <!-- If truck=True, launch at_ros2udp/at_acquisition & urg hokuyo driver -->
+    <group if="$(arg truck)">
+    
+        <!-- UDP data: IBEO and SDF (odom and radars) -->
+        <include file="$(find at_udp2ros)/launch/at_acquisition.launch">
+            <arg name="rviz" value="false"/>
+            <arg name="camera" value="$(arg camera)"/> 
+        </include>
+
+        <!-- HOKUYO -->
+        <node pkg="urg_node"
+              type="urg_node"  
+              name="front_laser">
+              <remap from="scan" to="/at_hokuyo"/>
+              <param name="~ip_address"        value="169.254.145.210" />
+              <param name="~ip_port"           value="10940" />
+              <param name="~frame_id"          value="/at_hokuyo" />
+              <param name="~calibrate_time"    value="true" />
+              <param name="~publish_intensity" value="false" />
+              <param name="~publish_multiecho" value="false" />
+              <param name="~angle_min"         value="-1.5" />
+              <param name="~angle_max"         value="1.5" />
+        </node>
+        
+        <!-- VISUALIZATION -->
+        <group if="$(arg rviz)">
+            <node name="rviz"
+                pkg="rviz"
+                type="rviz" 
+                args="-d $(find at_tests_real)/rviz/at_sensors.rviz" />
+        </group>
+        
+    </group>
+            
+    <!-- If truck=False, launch at_ros2udp/at_rosbag_play -->
+    <group unless="$(arg truck)">
+        <include file="$(find at_udp2ros)/launch/at_rosbag_play.launch">
+            <arg name="rviz" value="$(arg rviz)"/> 
+        </include>
+    </group>
+    
+
+</launch>
+
+<!--  Setting Hokuyo from native IP 192.168.0.10 -->
+<!--  1) Config a wired connection with Manual settings:-->
+<!--        - IP: 192.168.0.11-->
+<!--        - Netmask: 255.255.255.0-->
+<!--        - Gateway: 0.0.0.0-->
+<!--  2) Connect Hokuyo direct to computer with connection set to 1-->
+<!--  3) In a terminal execute -->
+<!--         $rosrun urg_node set_urg_ip.py 169.254.145.210 0.0.0.0-->
+<!--  does not work-> May be we have to specuify the new netmask with "-nm" -->
+

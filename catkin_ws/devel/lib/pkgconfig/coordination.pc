@@ -1,0 +1,8 @@
+prefix=/home/jendav/catkin_ws/devel
+
+Name: coordination
+Description: Description of coordination
+Version: 0.0.0
+Cflags: 
+Libs: -L/home/jendav/catkin_ws/devel/lib 
+Requires: 

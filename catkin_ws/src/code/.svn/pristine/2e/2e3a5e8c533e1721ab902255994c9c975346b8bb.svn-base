@@ -1,0 +1,36 @@
+<!-- Launches global navigation loop -->
+
+<launch>
+
+    <!-- User Args  -->
+    <arg name="rviz" default="true" />  <!-- rviz visualization or not  -->
+    
+    <!-- AT local planning and mapping without rviz -->
+    <include file="$(find at_tests_real)/launch/at_local_planning_with_mapping.launch">
+        <arg name="rviz" value="false"/>
+        <arg name="truck" value="true"/> 
+    </include>
+
+    <!-- SLAM / Localization -->
+    <include file="$(find wolf_ros)/launch/wolf_occmap_from_volvo_real.launch">
+        <arg name="rviz" value="false"/>
+        <arg name="truck" value="true"/> 
+    </include>
+    
+    <!-- Global Planner  -->
+    <include file="$(find cargo_ants_path_planner)/launch/at_global_planner.launch">
+        <arg name="rviz" value="false"/>
+        <arg name="truck" value="true"/> 
+    </include>
+    
+    <!-- rviz configurated for local map -->
+    <!--RESULTS VISUALIZATION-->
+    <group if="$(arg rviz)">
+        <node name="rviz"
+            pkg="rviz"
+            type="rviz" 
+            args="-d $(find at_tests_real)/rviz/at_global_navigation.rviz" />
+    </group>    
+
+</launch>
+

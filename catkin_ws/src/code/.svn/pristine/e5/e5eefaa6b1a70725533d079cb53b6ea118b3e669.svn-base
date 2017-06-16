@@ -1,0 +1,14 @@
+# pack-refs with: peeled fully-peeled 
+ddcc56395a454468fda2cca6ac8bbf0edb411eba refs/remotes/origin/develop
+7aeed6140b6087e2f7a07893745d7c356f5debd1 refs/remotes/origin/gatech
+a0e105708e9f66fed134788f5e89ea825491d7c1 refs/remotes/origin/master
+f6f03e2417bbe15e9baefe6c1a3e7db0416201eb refs/tags/0.3.0
+2e0512328ef45ed9f070840cc41ea249c5512ae1 refs/tags/2.0.0
+d4dc8fdf493ad2380150abbd8f46deef67c66c42 refs/tags/2.0.1
+78658412426a00cedc7d93ad74e16df9b08afae0 refs/tags/2.0.2
+15789d6aba73d46c470ee4b31a83f708db7d81fa refs/tags/2.0.3
+933ea331160dd29f11d5fe5e031cd05cdcfed241 refs/tags/2.0.4
+08b96b0492dc88f074103386b97cdbc2ea1a046c refs/tags/2.0.5
+80ad0931cd8bbf6fc37586c49a1ba1f4a9479abb refs/tags/2.0.6
+2ca94a12d7da84af56dc1a4bf47b7ba29adfd1c7 refs/tags/2.0.7
+291647f1a620e395520c5855aca6e4bbfd612083 refs/tags/2.0.8

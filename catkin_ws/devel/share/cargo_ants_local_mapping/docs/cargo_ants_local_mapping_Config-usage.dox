@@ -1,0 +1,29 @@
+\subsubsection usage Usage
+\verbatim
+<node name="local_mapping" pkg="cargo_ants_local_mapping" type="local_mapping">
+  <param name="verbose_mode" type="bool" value="False" />
+  <param name="build_grid" type="bool" value="True" />
+  <param name="detect_grid_obstacles" type="bool" value="True" />
+  <param name="detect_scan_obstacles" type="bool" value="True" />
+  <param name="detect_lines" type="bool" value="False" />
+  <param name="detect_corners" type="bool" value="False" />
+  <param name="detect_polylines" type="bool" value="False" />
+  <param name="mapping_rate" type="double" value="10.0" />
+  <param name="is_odom_relative" type="bool" value="True" />
+  <param name="num_lasers" type="int" value="1" />
+  <param name="num_radars" type="int" value="0" />
+  <param name="base_link_name" type="str" value="agv_base_link" />
+  <param name="radar_idx_offset" type="int" value="0" />
+  <param name="radar_link_name" type="str" value="at_radar" />
+  <param name="grid_size_x" type="double" value="30.0" />
+  <param name="grid_size_y" type="double" value="20.0" />
+  <param name="grid_cell_size" type="double" value="0.5" />
+  <param name="grid_x_max" type="double" value="30.0" />
+  <param name="grid_y_max" type="double" value="10.0" />
+  <param name="cell_occupancy_odom_th" type="double" value="0.1" />
+  <param name="cell_occupancy_cluster_th" type="double" value="0.5" />
+  <param name="cell_occupancy_decay" type="double" value="0.5" />
+  <param name="cell_lidar_hit" type="double" value="0.5" />
+</node>
+\endverbatim
+

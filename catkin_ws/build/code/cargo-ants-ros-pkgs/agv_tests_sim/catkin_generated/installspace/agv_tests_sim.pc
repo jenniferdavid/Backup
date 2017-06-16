@@ -1,0 +1,8 @@
+prefix=/home/jendav/catkin_ws/install
+
+Name: agv_tests_sim
+Description: Description of agv_tests_sim
+Version: 0.0.0
+Cflags: 
+Libs: -L/home/jendav/catkin_ws/install/lib 
+Requires: 

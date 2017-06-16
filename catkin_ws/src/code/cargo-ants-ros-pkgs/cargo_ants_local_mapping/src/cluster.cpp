@@ -1,0 +1,163 @@
+#include "cluster.h"
+
+//init static cluster counter
+unsigned int Cluster::cluster_id_count_ = 0;
+
+Cluster::Cluster() : 
+    cluster_id_(++cluster_id_count_), 
+    centroid_x_(0),
+    centroid_y_(0)
+//     long_side_(0),
+//     short_side_(0),
+//     orientation_(0)
+{
+	//
+}
+
+Cluster::~Cluster()
+{
+	//
+}
+
+void Cluster::setPoints()
+{
+    points_.resize(3,supporters_.size()); 
+    unsigned int ii=0;
+    for ( std::list<std::pair<double,double> >::iterator it = supporters_.begin(); it != supporters_.end(); it++, ii++ )
+    {
+        points_.block<3,1>(0,ii) << it->first, it->second, 1; 
+    }
+}
+
+void Cluster::computeCentroid()
+{
+    double mx=0, my=0; 
+    for (unsigned int ii=0; ii<points_.cols(); ii++)
+    {
+        mx += points_(0,ii); 
+        my += points_(1,ii); 
+    }
+
+    centroid_x_ = mx/points_.cols();
+    centroid_y_ = my/points_.cols();
+}
+
+// void Cluster::computeRadius()
+// {
+//     double dd2=0;
+//     double dd2max=0;
+//     unsigned int iimax; 
+//     
+//     //get the furthest point
+//     for (unsigned int ii=0; ii<points_.cols(); ii++)
+//     {
+//         dd2 = (centroid_.head(2) - points_.block<2,1>(0,ii)).squaredNorm();
+//         if ( dd2 > dd2max )
+//         {
+//             iimax = ii;
+//             dd2max = dd2; 
+//         }
+//     }
+//     
+//     //radius as the distance to the furthest point
+//     radius_ = sqrt(dd2max);
+// }
+
+void Cluster::computeBoundingBox(const double & _clearance)
+{
+    double cxx, cyy, cxy; //variance and covariance terms
+    Eigen::MatrixXd points_o, points_c; //points wrt origin, points wrt cov eigen vectors
+    Eigen::Matrix2d c_mat; //covariance matrix of cluster points
+    Eigen::EigenSolver<Eigen::Matrix2d>::EigenvectorsType e_mat; //matrix of eigenvectors (could be complex or real)
+    Eigen::EigenSolver<Eigen::Matrix2d>::EigenvalueType evals; //matrix of eigenvectors (could be complex or real)
+    Eigen::Matrix2d r_mat; //real velued rotation matrix
+    Eigen::Matrix<double, 2,4> corners_c; //corners wrt cov eigen vectors
+    Eigen::Matrix<double, 2,4> corners_o; //Final box corners. wrt global axis and translated to cluster centroid
+    
+    //copy cluster point x,y coordinates to an Eigen Matrix, subtracting centroid coordinates
+    points_o.resize(2,points_.cols());
+    for (unsigned int ii=0; ii<points_.cols(); ii++) 
+    {
+        points_o.block<2,1>(0,ii) << (points_(0,ii)-centroid_x_) , (points_(1,ii)-centroid_y_); 
+    }
+
+    //compute covariance matrix (c_mat)
+    cxx = points_o.row(0).dot(points_o.row(0))/points_.cols();
+    cyy = points_o.row(1).dot(points_o.row(1))/points_.cols(); 
+    cxy = points_o.row(0).dot(points_o.row(1))/points_.cols(); 
+    c_mat << cxx,cxy,cxy,cyy; 
+    
+    //get eigen vectors of c_mat
+    Eigen::EigenSolver<Eigen::Matrix2d> e_solver(c_mat);
+    e_mat = e_solver.eigenvectors();
+    evals = e_solver.eigenvalues();
+    
+    //keep eigen values. eval_1_ is the largest
+    if ( evals(0).real() > evals(1).real() )
+    {
+        eval_1_ = evals(0).real();
+        eval_2_ = evals(1).real();
+    }
+    else
+    {
+        eval_1_ = evals(1).real();
+        eval_2_ = evals(0).real();
+    }
+    
+    //mount a Real rotation matrix. e_mat is real since c_mat is positive symetric
+    r_mat << e_mat(0,0).real(), e_mat(0,1).real(), e_mat(1,0).real(), e_mat(1,1).real();
+    
+    //rotate all points_o to points_c
+    points_c.resize(2,points_.cols());
+    points_c = r_mat.inverse()*points_o; 
+    
+    //get min and max values
+    double min_x = points_c.row(0).minCoeff();
+    double max_x = points_c.row(0).maxCoeff();
+    double min_y = points_c.row(1).minCoeff();
+    double max_y = points_c.row(1).maxCoeff();
+    
+    //set 4 corners of the box wrt c. One corner per column. Order is: top-left, top-right, bottom-left, bottom-right
+    corners_c.row(0) << min_x-_clearance,max_x+_clearance,max_x+_clearance,min_x-_clearance; //x coordinates
+    corners_c.row(1) << max_y+_clearance,max_y+_clearance,min_y-_clearance,min_y-_clearance; //y coordinates
+
+    //rotate corners to origin frame
+    corners_o = r_mat*corners_c; 
+    
+    //set class members, adding the translation (centroids) substracted at the beggining of this function
+    for (unsigned int ii=0; ii<4; ii++)
+    {
+        bbox_corners_[ii].first = corners_o(0,ii)+centroid_x_; //x coordinate
+        bbox_corners_[ii].second = corners_o(1,ii)+centroid_y_; //y coordinate
+    }
+    
+}
+
+void Cluster::print() const
+{
+    //print cluster params
+    std::cout 
+            << "\tcluster_id_: " << cluster_id_ << std::endl 
+            << "\tcentroid_x_: " << centroid_x_ << std::endl 
+            << "\tcentroid_y_: " << centroid_y_ << std::endl;
+//             << "\tlong_side_: " << long_side_ << std::endl 
+//             << "\tshort_side_: " << short_side_ << std::endl 
+//             << "\torientation_: " << orientation_ << std::endl;
+
+    //print cluster cell index pairs
+    std::cout << "\tcells_: ";
+    for (unsigned int jj = 0; jj < cells_.size(); jj++)
+	{
+		std::cout << cells_.at(jj).first << "," << cells_.at(jj).second << " - "; 
+	}
+	std::cout << std::endl; 
+    
+    //print cluster point pairs
+    std::cout << "\tpoints_: ";
+    for (unsigned int jj = 0; jj < points_.cols(); jj++)
+    {
+        std::cout << points_(0,jj) << "," << points_(1,jj) << " - "; 
+    }
+    std::cout << std::endl; 
+    
+}

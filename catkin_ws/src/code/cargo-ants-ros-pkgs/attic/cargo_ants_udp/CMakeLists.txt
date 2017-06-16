@@ -1,0 +1,53 @@
+cmake_minimum_required (VERSION 2.6)
+if (COMMAND cmake_policy)
+  cmake_policy (SET CMP0003 NEW)
+  cmake_policy (SET CMP0005 NEW)
+  if (POLICY CMP0011)
+    cmake_policy (SET CMP0011 NEW)
+  endif (POLICY CMP0011)
+  if (POLICY CMP0042)
+    cmake_policy (SET CMP0042 NEW)
+  endif (POLICY CMP0042)
+endif (COMMAND cmake_policy)
+
+project (cargo_ants_udp)
+set (CMAKE_VERBOSE_MAKEFILE ON)
+
+find_package (catkin REQUIRED COMPONENTS
+  cargo_ants_msgs
+  roscpp
+)
+
+catkin_package (
+  INCLUDE_DIRS include
+  LIBRARIES cargo_ants_udp
+  CATKIN_DEPENDS cargo_ants_msgs roscpp
+  #  DEPENDS system_lib
+)
+
+include_directories (
+  include
+  ${catkin_INCLUDE_DIRS}
+  )
+
+add_library (cargo_ants_udp SHARED
+  src/UDPMessage.cpp
+  src/UDPClient.cpp
+  src/UDPServer.cpp
+  )
+#target_link_libraries ()
+
+
+add_executable (rostoudp_odom src/rostoudp_odom.cpp)
+add_dependencies(rostoudp_odom ${catkin_EXPORTED_TARGETS})
+target_link_libraries (rostoudp_odom cargo_ants_udp ${catkin_LIBRARIES})
+
+
+add_executable (rostoudp_traj src/rostoudp_traj.cpp)
+add_dependencies(rostoudp_traj ${catkin_EXPORTED_TARGETS})
+target_link_libraries (rostoudp_traj cargo_ants_udp ${catkin_LIBRARIES})
+
+
+add_executable (rostoudp src/rostoudp.cpp)
+add_dependencies(rostoudp ${catkin_EXPORTED_TARGETS})
+target_link_libraries (rostoudp cargo_ants_udp ${catkin_LIBRARIES})

@@ -1,0 +1,7 @@
+\subsubsection parameters ROS parameters
+
+Reads and maintains the following parameters on the ROS server
+
+- \b "~odom_noise_stddev_ratio_v" : \b [double] Linear velocity noise stddev is the product between this ratio and the linear velocity reading min: 0.0, default: 0.01, max: 0.5
+- \b "~odom_noise_stddev_ratio_w" : \b [double] Rotation rate noise stddev is the product between this ratio and the rotation rate reading min: 0.0, default: 0.01, max: 0.5
+

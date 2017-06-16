@@ -1,0 +1,28 @@
+\subsubsection parameters ROS parameters
+
+Reads and maintains the following parameters on the ROS server
+
+- \b "~verbose_mode" : \b [bool] verbose mode [t/f] min: False, default: False, max: True
+- \b "~build_grid" : \b [bool] build grid [t/f] min: False, default: True, max: True
+- \b "~detect_grid_obstacles" : \b [bool] detect obstacles at grid[t/f] min: False, default: True, max: True
+- \b "~detect_scan_obstacles" : \b [bool] detect obstacles at scan [t/f] min: False, default: True, max: True
+- \b "~detect_lines" : \b [bool] detect lines [t/f] min: False, default: False, max: True
+- \b "~detect_corners" : \b [bool] detect corners [t/f] min: False, default: False, max: True
+- \b "~detect_polylines" : \b [bool] detect polylines [t/f] min: False, default: False, max: True
+- \b "~mapping_rate" : \b [double] mapping rate [hz] min: 2.0, default: 10.0, max: 20.0
+- \b "~is_odom_relative" : \b [bool] True: Rleative Odom. False: Twist Odom [t/f] min: False, default: True, max: True
+- \b "~num_lasers" : \b [int] number of laser devices [#] min: 0, default: 1, max: 10
+- \b "~num_radars" : \b [int] number of radar devices [#] min: 0, default: 0, max: 10
+- \b "~base_link_name" : \b [str] Name of the vehicle base link min: , default: agv_base_link, max: 
+- \b "~radar_idx_offset" : \b [int] Starting index to name radar frames [#] min: 0, default: 0, max: 10
+- \b "~radar_link_name" : \b [str] Name of the radar device frames, without radar id min: , default: at_radar, max: 
+- \b "~grid_size_x" : \b [double] grid size in x [m] min: 1.0, default: 30.0, max: 60.0
+- \b "~grid_size_y" : \b [double] grid size in y [m] min: 1.0, default: 20.0, max: 60.0
+- \b "~grid_cell_size" : \b [double] cell size [m] min: 0.1, default: 0.5, max: 1.0
+- \b "~grid_x_max" : \b [double] grid top left corner, x coordinate [m] min: 10.0, default: 30.0, max: 60.0
+- \b "~grid_y_max" : \b [double] grid top left corner, y coordinate [m] min: 10.0, default: 10.0, max: 60.0
+- \b "~cell_occupancy_odom_th" : \b [double] threshold for occupied cell. Used in odom prediction min: 0.1, default: 0.1, max: 0.5
+- \b "~cell_occupancy_cluster_th" : \b [double] threshold for occupied cell. Used in clustering min: 0.1, default: 0.5, max: 0.5
+- \b "~cell_occupancy_decay" : \b [double] multiplying factor for twist updated cells min: 0.0, default: 0.5, max: 0.95
+- \b "~cell_lidar_hit" : \b [double] factor min: 0.1, default: 0.5, max: 0.9
+

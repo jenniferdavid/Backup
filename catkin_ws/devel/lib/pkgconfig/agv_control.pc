@@ -1,0 +1,8 @@
+prefix=/home/jendav/catkin_ws/devel
+
+Name: agv_control
+Description: Description of agv_control
+Version: 0.0.0
+Cflags: 
+Libs: -L/home/jendav/catkin_ws/devel/lib 
+Requires: 

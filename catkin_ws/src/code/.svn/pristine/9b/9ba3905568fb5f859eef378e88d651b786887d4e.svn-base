@@ -1,0 +1,51 @@
+<!-- Launches local map from rosbag-->
+
+<launch>
+    <!-- Rosbag play. At least: tf, 1 lidar and 1 odometry source -->
+    <node   
+        pkg="rosbag"
+        type="play"
+        name="rosbag"
+        args="-l --clock -s 50 $(env DATASET_PATH)/cargo_ants/20160621_volvo_storaholm/2016-06-21-16-44-23.bag">
+    </node>
+        
+    <!-- rviz configurated for local map -->
+    <node   
+        name="rviz" 
+        pkg="rviz" 
+        type="rviz"
+        args="-d $(find cargo_ants_local_mapping)/rviz/local_map_at.rviz">
+        <param 
+            name="~tf_prefix" 
+            value="/$(env ROBOT)" 
+            type="str"/>
+    </node>
+        
+    <!--    Launch local mapping node -->
+    <group ns="$(env ROBOT)">
+        
+        <node   
+            pkg="cargo_ants_local_mapping"
+            type="local_mapping"
+            name="local_mapping"
+            args=""
+            output="screen">
+            <remap 
+                from="/$(env ROBOT)/local_mapping/odometry"
+                to="/at_udp2ros_sdf/odom" />
+            <remap 
+                from="/$(env ROBOT)/local_mapping/laser0"
+                to="/at_udp2ros_ibeo/scan_4"/>
+            <rosparam 
+                command="load" 
+                file="$(find cargo_ants_local_mapping)/config/local_mapping_params_at.yaml"/>
+            <param 
+                name="~tf_prefix" 
+                value="/$(env ROBOT)" 
+                type="str"/>
+        </node>
+        
+    </group>
+
+</launch>
+

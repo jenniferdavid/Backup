@@ -1,0 +1,8 @@
+prefix=/home/jendav/catkin_ws/install
+
+Name: cargo_ants_pa
+Description: Description of cargo_ants_pa
+Version: 0.0.0
+Cflags: -I/home/jendav/catkin_ws/install/include -I/usr/include/eigen3
+Libs: -L/home/jendav/catkin_ws/install/lib 
+Requires: roscpp std_msgs cargo_ants_msgs tf

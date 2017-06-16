@@ -1,0 +1,8 @@
+prefix=/home/jendav/catkin_ws/devel
+
+Name: rosbuzz
+Description: Description of rosbuzz
+Version: 0.1.0
+Cflags: -I/home/jendav/catkin_ws/devel/include -I/home/jendav/catkin_ws/src/code/rosbuzz/include
+Libs: -L/home/jendav/catkin_ws/devel/lib 
+Requires: roscpp std_msgs mavros_msgs sensor_msgs message_runtime

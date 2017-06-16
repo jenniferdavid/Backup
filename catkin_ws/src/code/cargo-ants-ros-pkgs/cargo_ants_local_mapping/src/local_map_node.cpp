@@ -1,0 +1,675 @@
+#include "local_map_node.h"
+
+LocalMapNode::LocalMapNode() :
+    nh_(ros::this_node::getName())
+{    
+    double grid_size_x;
+    double grid_size_y;
+    double grid_cell_size; 
+    double grid_x_max;
+    double grid_y_max; 
+    int param_x; 
+    std::ostringstream topic_name;
+    std::string laser_link_name, radar_link_name; 
+    unsigned int laser_idx_offset, radar_idx_offset; 
+    std::ostringstream laser_link_name_full, radar_link_name_full, laser_frame_param; 
+    tf::TransformListener tfl;
+    tf::StampedTransform base_2_sensor;
+    tf::Matrix3x3 rmat; 
+
+    //get algorithm params from dynamic reconfigure
+    nh_.getParam("verbose_mode", this->verbose_);
+    nh_.getParam("build_grid", this->build_grid_);
+    nh_.getParam("detect_grid_obstacles", this->detect_grid_obstacles_);
+    nh_.getParam("detect_scan_obstacles", this->detect_scan_obstacles_);
+    nh_.getParam("detect_lines", this->detect_lines_);
+    nh_.getParam("detect_corners", this->detect_corners_);
+    nh_.getParam("detect_polylines", this->detect_polylines_);
+    nh_.getParam("mapping_rate", this->rate_);
+    nh_.getParam("is_odom_relative", this->is_odom_relative_);
+    nh_.getParam("num_lasers", param_x); num_lasers_ = (unsigned int)param_x;
+    nh_.getParam("num_radars", param_x); num_radars_ = (unsigned int)param_x;
+    nh_.getParam("base_link_name", this->base_link_name_);
+    //nh_.getParam("laser_idx_offset", param_x); laser_idx_offset = (unsigned int)param_x;
+    //nh_.getParam("laser_link_name", laser_link_name);
+    //nh_.getParam("radar_idx_offset", param_x); radar_idx_offset = (unsigned int)param_x;//TODO
+    //nh_.getParam("radar_link_name", radar_link_name);//TODO
+    nh_.getParam("cell_occupancy_odom_th", this->cell_occupancy_odom_th_);
+    nh_.getParam("cell_occupancy_cluster_th", this->cell_occupancy_cluster_th_);
+    nh_.getParam("cell_occupancy_decay", this->cell_occupancy_decay_);
+    nh_.getParam("cell_lidar_hit", this->cell_lidar_hit_);
+    if ( verbose_ ) std::cout << "LocalMapNode(): " << __LINE__ <<  std::endl;
+
+    //get grid params from dynamic reconfigure
+    nh_.getParam("grid_size_x", grid_size_x);
+    nh_.getParam("grid_size_y", grid_size_y);
+    nh_.getParam("grid_cell_size", grid_cell_size);
+    nh_.getParam("grid_x_max", grid_x_max);
+    nh_.getParam("grid_y_max", grid_y_max);
+    if ( verbose_ ) std::cout << "LocalMapNode(): " << __LINE__ <<  std::endl;
+    
+    //allocate the grid_ object. 
+    grid_ = new laserscanutils::Grid2D(grid_size_x,grid_size_y,grid_cell_size,grid_cell_size,grid_x_max,grid_y_max); 
+    if ( verbose_ ) std::cout << "LocalMapNode(): " << __LINE__ <<  std::endl;
+    
+    //Set fixed sizes of data vectors
+    laser_data_.resize(num_lasers_); 
+    if ( verbose_ ) std::cout << "LocalMapNode(): " << __LINE__ <<  std::endl;
+    
+    //set up odometry subscriber with callback
+    odometry_subscriber_ = nh_.subscribe("odometry", 100, &LocalMapNode::odometryCallback, this);
+    if ( verbose_ ) std::cout << "LocalMapNode(): " << __LINE__ <<  std::endl;
+    
+    //set up laser subscribers with callbacks
+    laser_subscribers_.resize(num_lasers_); 
+    for (unsigned int ii = 0; ii<laser_subscribers_.size(); ii++)
+    {
+        //set subscribers
+        topic_name.str(""); //clears previous content
+        topic_name << "laser" << ii;
+        laser_subscribers_.at(ii) = nh_.subscribe(topic_name.str(), 1, &LocalMapNode::laserCallback, this);
+    }
+    
+    //set laser_link_id_map_ and laser_mounting_points_ with the homogeneous matrix (assumed fixed)
+    laser_mounting_points_.resize(num_lasers_);
+    for (unsigned int ii = 0; ii<laser_subscribers_.size(); ii++)
+    {
+        //mount the laser name param
+        laser_frame_param.str(""); //clears previous content
+        laser_link_name = ""; //clears previous content
+        laser_frame_param << "laser" << ii << "_frame_name"; 
+        nh_.param<std::string>(laser_frame_param.str(), laser_link_name, "DEFAULT_FRAME_NAME");
+        std::cout << "laser_frame_param: " << laser_frame_param.str() << std::endl;
+        std::cout << "laser_link_name: " << laser_link_name << std::endl;
+        
+//         laser_link_name_full.str("");
+//         laser_link_name_full << laser_link_name << (ii+laser_idx_offset);
+//         laser_link_id_map_[laser_link_name_full.str()] = ii; //set mapping between link name and id
+        laser_link_id_map_[laser_link_name] = ii; //set mapping between link name and id
+        //std::cout << "laser_link_name_full: " << laser_link_name_full.str() << std::endl;
+        
+        //if ( tfl.waitForTransform(base_link_name_, laser_link_name_full.str(), ros::Time(0), ros::Duration(10.)) )
+        if ( tfl.waitForTransform(base_link_name_, laser_link_name, ros::Time(0), ros::Duration(10.)) )
+        {
+            //look up for transform at TF
+            //tfl.lookupTransform(base_link_name_, laser_link_name_full.str(), ros::Time(0), base_2_sensor);
+            tfl.lookupTransform(base_link_name_, laser_link_name, ros::Time(0), base_2_sensor);
+
+            //rotation matrix
+            rmat.setRotation(base_2_sensor.getRotation());
+            
+            //set homogeneous matrix:
+            laser_mounting_points_.at(ii) << rmat.getRow(0).x(), rmat.getRow(0).y(), rmat.getRow(0).z(), base_2_sensor.getOrigin().x(),
+                                             rmat.getRow(1).x(), rmat.getRow(1).y(), rmat.getRow(1).z(), base_2_sensor.getOrigin().y(),
+                                             rmat.getRow(2).x(), rmat.getRow(2).y(), rmat.getRow(2).z(), base_2_sensor.getOrigin().z(),
+                                             0,0,0,1;
+                                             
+            //debug
+            if (verbose_)
+            {
+                std::cout << "H mat from " << base_link_name_ << " to " << laser_link_name << ":" << std::endl;
+                std::cout << laser_mounting_points_.at(ii) << std::endl; 
+            }
+        }
+        else
+        {
+            std::cout << "WARNING: Homogeneous Transform from " << base_link_name_ << " to " << laser_link_name << " not set. Identity assumed" << std::endl;
+            laser_mounting_points_.at(ii) =  Eigen::Matrix4d::Identity();
+        }
+    }
+
+    //set up laser subscribers with callbacks
+    radar_subscribers_.resize(num_radars_); 
+    for (unsigned int ii = 0; ii<radar_subscribers_.size(); ii++)
+    {
+        //set subscribers
+        topic_name.str(""); //clears previous content
+        topic_name << "radar" << ii;
+        radar_subscribers_.at(ii) = nh_.subscribe(topic_name.str(), 1, &LocalMapNode::radarCallback, this);
+    }
+    
+    //set radar_link_id_map_ and radar_mounting_points_ with the homogeneous matrix (assumed fixed)
+    radar_mounting_points_.resize(num_radars_);
+    for (unsigned int ii = 0; ii<radar_subscribers_.size(); ii++)
+    {
+        radar_link_name_full.str("");
+        radar_link_name_full << radar_link_name << (ii+radar_idx_offset);
+        radar_link_id_map_[radar_link_name_full.str()] = ii; //set mapping between link name and id
+        //std::cout << "radar_link_name_full: " << radar_link_name_full.str() << std::endl;
+        
+        if ( tfl.waitForTransform(base_link_name_, radar_link_name_full.str(), ros::Time(0), ros::Duration(10.)) )
+        {
+            //look up for transform at TF
+            tfl.lookupTransform(base_link_name_, radar_link_name_full.str(), ros::Time(0), base_2_sensor);
+
+            //rotation matrix
+            rmat.setRotation(base_2_sensor.getRotation());
+            
+            //set homogeneous matrix:
+            radar_mounting_points_.at(ii) << rmat.getRow(0).x(), rmat.getRow(0).y(), rmat.getRow(0).z(), base_2_sensor.getOrigin().x(),
+                                             rmat.getRow(1).x(), rmat.getRow(1).y(), rmat.getRow(1).z(), base_2_sensor.getOrigin().y(),
+                                             rmat.getRow(2).x(), rmat.getRow(2).y(), rmat.getRow(2).z(), base_2_sensor.getOrigin().z(),
+                                             0,0,0,1;
+                                             
+            //debug
+            if (verbose_)
+            {
+                std::cout << "H mat from " << base_link_name_ << " to " << radar_link_name_full.str() << ":" << std::endl;
+                std::cout << radar_mounting_points_.at(ii) << std::endl; 
+            }
+        }
+        else
+        {
+            std::cout << "WARNING: Homogeneous Transform from " << base_link_name_ << " to " << radar_link_name_full.str() << " not set. Identity assumed" << std::endl;
+            radar_mounting_points_.at(ii) =  Eigen::Matrix4d::Identity();
+        }
+    }
+    
+    //advertise publishers
+    grid_publisher_ = nh_.advertise<nav_msgs::OccupancyGrid>("grid_map", 100);
+    marker_publisher_ = nh_.advertise<visualization_msgs::MarkerArray>("markers", 100);
+	obstacle_map_publisher_ = nh_.advertise<cargo_ants_msgs::ObstacleMap>("obstacle_map", 100);
+    if ( verbose_ ) std::cout << "LocalMapNode(): " << __LINE__ <<  std::endl;
+            
+    //Set laserscanutils hough params 
+    hough_params_.range_max_ = 30;
+    hough_params_.range_step_ = 0.5;
+    hough_params_.theta_step_ = 3*M_PI/180.;
+    hough_params_.min_supports_ = 20;    
+    line_finder_hough_.setHoughParams(hough_params_);
+    
+    //set iterative line finder params
+    ilf_params_.max_fit_error_ = 0.2; 
+    ilf_params_.min_supports_ = 10; 
+    line_finder_ilf_.setIlfParams(ilf_params_);
+    
+    //print init info
+    std::cout << std::endl << "Local Mapping Running with the following config (II): " << std::endl;
+    std::cout << "\tverbose: " << verbose_ << std::endl;
+    std::cout << "\tdetect_lines: " << detect_lines_ << std::endl;
+    std::cout << "\trate: " << rate_ << std::endl;
+    std::cout << "\tis_odom_relative: " << is_odom_relative_ << std::endl;
+    std::cout << "\tnum_lasers: " << num_lasers_ << std::endl;
+    std::cout << "\tnum_radars: " << num_radars_ << std::endl;
+    std::cout << "\tbase_link_name: " << base_link_name_ << std::endl;
+    std::cout << "\tcell_occupancy_odom_th: " << cell_occupancy_odom_th_ << std::endl;
+    std::cout << "\tcell_occupancy_cluster_th: " << cell_occupancy_cluster_th_ << std::endl;
+    std::cout << "\tcell_occupancy_decay: " << cell_occupancy_decay_ << std::endl;
+    std::cout << "\tcell_lidar_hit: " << cell_lidar_hit_ << std::endl;
+    
+    //print Grid info
+    grid_->print(); 
+    
+    //set last time stamp to now
+    ts_past_ = ros::Time::now(); 
+       
+}
+
+LocalMapNode::~LocalMapNode()
+{
+    //free memory 
+    delete grid_;
+}
+
+double LocalMapNode::getRate() const
+{
+    return rate_;
+}
+
+void LocalMapNode::process()
+{
+    //GRID
+    if ( build_grid_ )
+    {
+        //clear the next grid (1 indicates next)
+        grid_->clearGrid(1);
+        
+        //update the next grid from the current one and applying the motion of all odometry data received since the last iteration. 
+        if ( verbose_ ) std::cout << "process(): call to odometryUpdate()" << std::endl;
+        grid_->odometryUpdate(odometry_, cell_occupancy_decay_);
+        
+        //switch grids: next becomes current
+        if ( verbose_ )std::cout << "process(): call to switchGrid()" << std::endl;
+        grid_->switchGrid(); 
+        
+        //update the current grid with lidar hits. 
+        if ( verbose_ )std::cout << "process(): call to lidarUpdate()" << std::endl;
+        for ( unsigned int ii = 0; ii < laser_data_.size(); ii++ ) 
+        {
+            grid_->lidarUpdate(laser_data_[ii].points_);
+        }
+        
+        //clustering over the current grid
+        if ( detect_grid_obstacles_ )
+        {
+            if ( verbose_ ) std::cout << "process(): call to computeClusters()" << std::endl;
+            grid_->computeClusters(cluster_list_);
+        }
+    }
+
+    //SCAN SEGMENTATION
+    if ( ( detect_scan_obstacles_ ) || ( detect_lines_ ) )
+    {        
+        //SCAN SEGMENTS
+        if ( verbose_ ) std::cout << "process(): segment detection" << std::endl;
+        
+        //Clear segment list
+        //segment_list_.clear(); 
+
+        //run over all laser scan data, and find scan segments
+        for ( unsigned int ii = 0; ii < laser_data_.size(); ii++ ) 
+        {
+            //laser_data_[ii].findSegments(laser_data_[ii].params_, segment_list_, true);//set segment list and compute each segment parameters 
+        }
+        
+        //if ( verbose_ ) std::cout << "\tFound " << segment_list_.size() << " segments" << std::endl;
+
+        //LINES
+        if ( detect_lines_ )
+        {
+            if ( verbose_ ) std::cout << "process(): line detection" << std::endl;
+        
+            //Clear line list
+            line_list_.clear();
+
+            //run over all scans
+            for ( unsigned int ii = 0; ii < laser_data_.size(); ii++ ) 
+            {
+                //run over all segments and compute lines
+                for ( std::list<laserscanutils::ScanSegment>::iterator s_it = laser_data_[ii].segment_list_.begin(); s_it != laser_data_[ii].segment_list_.end(); s_it++ ) 
+                {
+                    line_finder_ilf_.findLines(s_it->points_, line_list_);
+                }
+            }
+            
+            if ( verbose_ ) 
+            {
+                std::cout << "\tFound " << line_list_.size() << " lines" << std::endl;
+                for (auto l_it = line_list_.begin(); l_it != line_list_.end(); l_it++)
+                {
+                    l_it->print(); 
+                }
+            }
+        }
+    }
+    
+    //CORNERS
+    //Clear line list
+    corner_list_.clear(); 
+    
+    //detect corners from line_list_
+    if ( detect_lines_ && detect_corners_ )
+    {
+        corner_finder_.findCorners(line_list_, corner_list_);
+    }
+    
+    if ( verbose_ ) 
+    {
+        std::cout << "\tFound " << corner_list_.size() << " corners" << std::endl;
+        for (auto c_it = corner_list_.begin(); c_it != corner_list_.end(); c_it++)
+        {
+            c_it->print(); 
+        }
+    }
+
+
+    //POLYLINES
+    if ( (detect_polylines_) )
+    {
+        poly_list_.clear(); 
+        
+        //from lines
+        //line_finder_ilf_.linesToPolylines(line_list_,poly_list_); 
+        
+        //from scans
+        for ( unsigned int ii = 0; ii < laser_data_.size(); ii++ ) 
+        {
+            line_finder_ilf_.findPolylines(laser_data_[ii], laser_data_[ii].params_, poly_list_);
+        }        
+    }
+    
+    //just extra newline in verbose case
+    if ( verbose_ ) std::cout << std::endl;
+}
+
+void LocalMapNode::publish()
+{
+    //fill grid message
+    grid_msg_.header.stamp = ros::Time::now(); 
+    grid_msg_.header.frame_id = base_link_name_;
+    grid_msg_.info.resolution = grid_->getGridStep();
+    grid_msg_.info.width = grid_->getNx();
+    grid_msg_.info.height = grid_->getNy();
+    grid_msg_.info.origin.position.x = grid_->getXmax()-grid_->getSizeX();
+    grid_msg_.info.origin.position.y = grid_->getYmax()-grid_->getSizeY();
+    grid_msg_.info.origin.position.z = 0.;
+    grid_msg_.info.origin.orientation.x = 0.;
+    grid_msg_.info.origin.orientation.y = 0.;
+    grid_msg_.info.origin.orientation.z = 0.;
+    grid_msg_.info.origin.orientation.w = 1.;
+    grid_->getGrid(grid_msg_.data);	
+	
+    //clear marker message
+    marker_msg_.markers.clear();
+    
+    //compute number of points in the polylines (used to resize marker array)
+    unsigned int np_ply = 0; 
+    for (std::list<laserscanutils::Polyline>::iterator poly_it=poly_list_.begin(); poly_it!=poly_list_.end(); poly_it++)
+    {
+        np_ply += poly_it->points_.cols(); 
+    }
+    
+    //Resizing marker array: 
+    marker_msg_.markers.resize( cluster_list_.size() + 
+                                segment_list_.size() +
+                                line_list_.size() + 
+                                2*corner_list_.size() + 
+                                poly_list_.size() + 
+                                np_ply );  
+    
+    unsigned int jj = 0; //marker array index
+    
+    //Grid obstacles    
+    for ( std::list<laserscanutils::GridCluster>::iterator it = cluster_list_.begin(); it != cluster_list_.end(); it++ )     
+    {            
+            //bounding box
+            marker_msg_.markers[jj].header.frame_id = base_link_name_;
+            marker_msg_.markers[jj].header.stamp = ros::Time::now();
+            marker_msg_.markers[jj].id = jj;
+            marker_msg_.markers[jj].type = visualization_msgs::Marker::LINE_STRIP;
+            marker_msg_.markers[jj].action = visualization_msgs::Marker::ADD;
+            marker_msg_.markers[jj].points.resize(5);//5 points required to close the box. First and last points are the same
+            for (unsigned int kk=0; kk<5; kk++)
+            {
+                marker_msg_.markers[jj].points.at(kk).x = it->getBBox(kk%4)(0);
+                marker_msg_.markers[jj].points.at(kk).y = it->getBBox(kk%4)(1);
+                marker_msg_.markers[jj].points.at(kk).z = 0.1;            
+            }
+            marker_msg_.markers[jj].scale.x = 0.3;
+            marker_msg_.markers[jj].color.a = 1.;
+            marker_msg_.markers[jj].color.r = 0.3;
+            marker_msg_.markers[jj].color.g = 0.3;
+            marker_msg_.markers[jj].color.b = 1.;
+            marker_msg_.markers[jj].lifetime = ros::Duration(0.1);   
+            jj++;     
+    }
+
+    //Segment obstacles
+    for ( std::list<laserscanutils::ScanSegment>::iterator s_it = segment_list_.begin(); s_it != segment_list_.end(); s_it++ ) 
+    {
+        //cluster centroids            
+        /*
+        marker_msg_.markers[jj].header.frame_id = base_link_name_;
+        marker_msg_.markers[jj].header.stamp = ros::Time::now();
+        marker_msg_.markers[jj].id = jj;
+        marker_msg_.markers[jj].type = visualization_msgs::Marker::CUBE;
+        marker_msg_.markers[jj].action = visualization_msgs::Marker::ADD;
+        marker_msg_.markers[jj].pose.position.x = it->getCentroid()(0); 
+        marker_msg_.markers[jj].pose.position.y = it->getCentroid()(1); 
+        marker_msg_.markers[jj].pose.position.z = 0.1;
+        marker_msg_.markers[jj].scale.x = 0.2;
+        marker_msg_.markers[jj].scale.y = 0.2;
+        marker_msg_.markers[jj].scale.z = 0.2;
+        marker_msg_.markers[jj].color.a = 1.;
+        marker_msg_.markers[jj].color.r = 0.3;
+        marker_msg_.markers[jj].color.g = 0.3;
+        marker_msg_.markers[jj].color.b = 1.;
+        marker_msg_.markers[jj].lifetime = ros::Duration(0.1); 
+        jj++;
+        */
+        
+        //bounding box
+        marker_msg_.markers[jj].header.frame_id = base_link_name_;
+        marker_msg_.markers[jj].header.stamp = ros::Time::now();
+        marker_msg_.markers[jj].id = jj;
+        marker_msg_.markers[jj].type = visualization_msgs::Marker::LINE_STRIP;
+        marker_msg_.markers[jj].action = visualization_msgs::Marker::ADD;
+        marker_msg_.markers[jj].points.resize(5);//5 points required to close the box. First and last points are the same
+        for (unsigned int kk=0; kk<5; kk++)
+        {
+            marker_msg_.markers[jj].points.at(kk).x = s_it->getBBox(kk%4)(0);
+            marker_msg_.markers[jj].points.at(kk).y = s_it->getBBox(kk%4)(1);
+            marker_msg_.markers[jj].points.at(kk).z = 0.1;            
+        }
+        marker_msg_.markers[jj].scale.x = 0.3;
+        marker_msg_.markers[jj].color.a = 1.;
+        marker_msg_.markers[jj].color.r = 1.;
+        marker_msg_.markers[jj].color.g = 0.3;
+        marker_msg_.markers[jj].color.b = 0.3;
+        marker_msg_.markers[jj].lifetime = ros::Duration(0.1);   
+        jj++;         
+    }
+    
+    //Line markers
+    for (std::list<laserscanutils::LineSegment>::iterator line_it=line_list_.begin(); line_it!=line_list_.end(); line_it++)
+    {
+        marker_msg_.markers[jj].header.frame_id = base_link_name_;
+        marker_msg_.markers[jj].header.stamp = ros::Time::now();
+        marker_msg_.markers[jj].id = jj;
+        marker_msg_.markers[jj].type = visualization_msgs::Marker::LINE_STRIP;
+        marker_msg_.markers[jj].action = visualization_msgs::Marker::ADD;
+        marker_msg_.markers[jj].points.resize(2);//Just one line
+        marker_msg_.markers[jj].points.at(0).x = line_it->point_first_(0);
+        marker_msg_.markers[jj].points.at(0).y = line_it->point_first_(1);
+        marker_msg_.markers[jj].points.at(0).z = 1.;
+        marker_msg_.markers[jj].points.at(1).x = line_it->point_last_(0);
+        marker_msg_.markers[jj].points.at(1).y = line_it->point_last_(1);
+        marker_msg_.markers[jj].points.at(1).z = 1.;
+        marker_msg_.markers[jj].scale.x = 0.1;
+        marker_msg_.markers[jj].color.a = 1.;
+        marker_msg_.markers[jj].color.r = 1.;
+        marker_msg_.markers[jj].color.g = 1.;
+        marker_msg_.markers[jj].color.b = 0.;
+        marker_msg_.markers[jj].lifetime = ros::Duration(0.1);  
+        jj++;
+    }
+    
+    //Corner markers
+    std::ostringstream marker_text;
+    for (std::list<laserscanutils::CornerPoint>::iterator corner_it=corner_list_.begin(); corner_it!=corner_list_.end(); corner_it++)
+    {
+        //corner point (red cylinder)
+        marker_msg_.markers[jj].header.frame_id = base_link_name_;
+        marker_msg_.markers[jj].header.stamp = ros::Time::now();
+        marker_msg_.markers[jj].id = jj;
+        marker_msg_.markers[jj].type = visualization_msgs::Marker::CYLINDER;
+        marker_msg_.markers[jj].action = visualization_msgs::Marker::ADD;
+        marker_msg_.markers[jj].pose.position.x = corner_it->point_(0); 
+        marker_msg_.markers[jj].pose.position.y = corner_it->point_(1);  
+        marker_msg_.markers[jj].pose.position.z = 0.0;
+        marker_msg_.markers[jj].scale.x = 0.3;
+        marker_msg_.markers[jj].scale.y = 0.3;
+        marker_msg_.markers[jj].scale.z = 1.;
+        marker_msg_.markers[jj].color.a = 1.;
+        marker_msg_.markers[jj].color.r = 1.;
+        marker_msg_.markers[jj].color.g = 0.1;
+        marker_msg_.markers[jj].color.b = 0.1;
+        marker_msg_.markers[jj].lifetime = ros::Duration(0.1); 
+        jj++;
+        
+        //corner aperture (text)
+        marker_msg_.markers[jj].header.frame_id = base_link_name_;
+        marker_msg_.markers[jj].header.stamp = ros::Time::now();
+        marker_msg_.markers[jj].id = jj;
+        marker_msg_.markers[jj].type = visualization_msgs::Marker::TEXT_VIEW_FACING;
+        marker_msg_.markers[jj].action = visualization_msgs::Marker::ADD;
+        marker_msg_.markers[jj].pose.position.x = corner_it->point_(0)+0.4; 
+        marker_msg_.markers[jj].pose.position.y = corner_it->point_(1)+0.4;  
+        marker_msg_.markers[jj].pose.position.z = 1.0;
+        marker_msg_.markers[jj].scale.z = 0.4;
+        marker_msg_.markers[jj].color.a = 1.;
+        marker_msg_.markers[jj].color.r = 0.;
+        marker_msg_.markers[jj].color.g = 0.;
+        marker_msg_.markers[jj].color.b = 0.;
+        marker_msg_.markers[jj].lifetime = ros::Duration(0.1); 
+        marker_text.str("");
+        marker_text << corner_it->orientation_*180./M_PI << " : " << corner_it->aperture_*180./M_PI;
+        marker_msg_.markers[jj].text = marker_text.str(); 
+        jj++;   
+    }
+    
+    //Polyline markers
+    for (std::list<laserscanutils::Polyline>::iterator poly_it=poly_list_.begin(); poly_it!=poly_list_.end(); poly_it++)
+    {
+        //line strip
+        marker_msg_.markers[jj].header.frame_id = base_link_name_;
+        marker_msg_.markers[jj].header.stamp = ros::Time::now();
+        marker_msg_.markers[jj].id = jj;
+        marker_msg_.markers[jj].type = visualization_msgs::Marker::LINE_STRIP;
+        marker_msg_.markers[jj].action = visualization_msgs::Marker::ADD;
+        marker_msg_.markers[jj].points.resize(poly_it->points_.cols());
+        for (unsigned int kk=0; kk<poly_it->points_.cols(); kk++)
+        {
+            marker_msg_.markers[jj].points.at(kk).x = poly_it->points_(0,kk);
+            marker_msg_.markers[jj].points.at(kk).y = poly_it->points_(1,kk);
+            marker_msg_.markers[jj].points.at(kk).z = 0.5;            
+        }
+        marker_msg_.markers[jj].scale.x = 0.1;
+        marker_msg_.markers[jj].color.a = 1.;
+        marker_msg_.markers[jj].color.r = 0.8;
+        marker_msg_.markers[jj].color.g = 0.8;
+        marker_msg_.markers[jj].color.b = 0.2;
+        marker_msg_.markers[jj].lifetime = ros::Duration(0.1);   
+        jj++;   
+        
+        //polyline points 
+        for (unsigned int kk=0; kk<poly_it->points_.cols(); kk++)
+        {
+            marker_msg_.markers[jj].header.frame_id = base_link_name_;
+            marker_msg_.markers[jj].header.stamp = ros::Time::now();
+            marker_msg_.markers[jj].id = jj;
+            marker_msg_.markers[jj].type = visualization_msgs::Marker::CYLINDER;
+            marker_msg_.markers[jj].action = visualization_msgs::Marker::ADD;
+            marker_msg_.markers[jj].pose.position.x = poly_it->points_(0,kk);
+            marker_msg_.markers[jj].pose.position.y = poly_it->points_(1,kk);
+            marker_msg_.markers[jj].pose.position.z = 0.0;
+            marker_msg_.markers[jj].scale.x = 0.3;
+            marker_msg_.markers[jj].scale.y = 0.3;
+            marker_msg_.markers[jj].scale.z = 1.;
+            marker_msg_.markers[jj].color.a = 1.;
+            marker_msg_.markers[jj].color.r = 1.; // initially all points in RED
+            marker_msg_.markers[jj].color.g = 0.1;
+            marker_msg_.markers[jj].color.b = 0.1;     
+            if ( (kk == 0) && (!poly_it->first_defined_) ) //check if the first is not defined ->ORANGE
+            {
+                marker_msg_.markers[jj].color.r = 1.;
+                marker_msg_.markers[jj].color.g = 0.5;
+                marker_msg_.markers[jj].color.b = 0.1;            
+            }
+            if ( (kk == poly_it->points_.cols()-1) && (!poly_it->last_defined_) ) //check if the last is not defined ->ORANGE
+            {
+                marker_msg_.markers[jj].color.r = 1.;
+                marker_msg_.markers[jj].color.g = 0.5;
+                marker_msg_.markers[jj].color.b = 0.1;            
+            }
+            marker_msg_.markers[jj].lifetime = ros::Duration(0.1); 
+            jj++;            
+        } 
+    }
+
+    //ObstacleMap message 
+    obstacle_map_msg_.obstacles.resize(cluster_list_.size());
+    unsigned int ii=0; 
+    //for ( std::list<laserscanutils::ScanSegment>::iterator it = segment_list_.begin(); it != segment_list_.end(); it++ )
+    for ( std::list<laserscanutils::GridCluster>::iterator it = cluster_list_.begin(); it != cluster_list_.end(); it++ ) 
+    {   
+        obstacle_map_msg_.obstacles.at(ii).type_tag = cargo_ants_msgs::Obstacle::UNKNOWN;
+        obstacle_map_msg_.obstacles.at(ii).origin.ox = it->getCentroid()(0);
+        obstacle_map_msg_.obstacles.at(ii).origin.oy = it->getCentroid()(1);
+        obstacle_map_msg_.obstacles.at(ii).origin.oth = it->getRadius();
+        obstacle_map_msg_.obstacles.at(ii).polylines.resize(1); //wouldn't be necessary this vector of polylines for a single obstacle->TODO: change Obstacle.msg
+        obstacle_map_msg_.obstacles.at(ii).polylines.at(0).points.resize(5);
+        for (unsigned int jj=0; jj<4; jj++)
+        {
+            obstacle_map_msg_.obstacles.at(ii).polylines.at(0).points.at(jj).px = it->getBBox(jj%4)(0);
+            obstacle_map_msg_.obstacles.at(ii).polylines.at(0).points.at(jj).py = it->getBBox(jj%4)(1);
+        }
+        //last point of the polyline message is the first one again
+        obstacle_map_msg_.obstacles.at(ii).polylines.at(0).points.at(4).px = it->getBBox(0)(0);
+        obstacle_map_msg_.obstacles.at(ii).polylines.at(0).points.at(4).py = it->getBBox(0)(1);
+        
+        ii++; 
+    }
+    
+    //publish
+    marker_publisher_.publish(marker_msg_);
+    grid_publisher_.publish(grid_msg_);
+	obstacle_map_publisher_.publish(obstacle_map_msg_);
+}
+
+void LocalMapNode::odometryCallback(const nav_msgs::Odometry::ConstPtr& _msg)
+{
+    //std::cout << "odometryCallback()" << std::endl;
+
+    ros::Duration dt_ros;
+    double dt; 
+    
+	//reset odometry array
+	odometry_.clear(); 
+	
+    if (is_odom_relative_)
+    {
+        // CASE RELATIVE ODOM (2D case. TNO-october14 dataset provides data in this way). Set 1s as integ. time
+        odometry_.push_back(Eigen::Vector4d(_msg->pose.pose.position.x, _msg->pose.pose.position.y, _msg->twist.twist.angular.z, 1));
+    }
+    else
+    {
+        // CASE TWIST. Preferred case, but "TNO-october14" rosbag does not provide twist ...
+        dt_ros = _msg->header.stamp - ts_past_; 
+        ts_past_ = _msg->header.stamp;
+        dt = ((double)dt_ros.sec + (double)dt_ros.nsec/(double)1e9);
+        odometry_.push_back(Eigen::Vector4d(_msg->twist.twist.linear.x, _msg->twist.twist.linear.y, _msg->twist.twist.angular.z, dt));
+        
+        //TESTING WARNING!!! SHORTCUT: FORCE wz = 0 -> case truck motor stopped
+        //odometry_.push_back(Eigen::Vector4d(_msg->twist.twist.linear.x, _msg->twist.twist.linear.y, 0, dt));
+    }
+}
+
+void LocalMapNode::laserCallback(const sensor_msgs::LaserScan::ConstPtr& _msg)
+{
+    //std::cout << "laserCallback()" << std::endl;
+    
+    unsigned int ii = 0; //iterator over raw scan
+    unsigned int ii_ok = 0; //counter of correct hits
+    double azimuth = _msg->angle_min; //ray azimuth. Init to angle_min value (azimuth of the first ray)
+    unsigned int laser_id;
+    Eigen::Vector4d point_device, point_base;
+    //laserscanutils::LaserScanParams scan_params; 
+    
+    //from message header.frame_id, gets the laser_id through the laser_link_id_map_
+    laser_id = laser_link_id_map_[_msg->header.frame_id]; 
+    if ( laser_id > laser_data_.size() ) return; //check error case TODO: See what maps return in the "not-found" case
+
+    //Set ranges at this->laser_data_
+    laser_data_[laser_id].ranges_raw_.resize(_msg->ranges.size());
+    for ( ii = 0; ii<_msg->ranges.size(); ii++ )
+    {
+        //if (_msg->ranges[ii] < _msg->range_min )
+        if (_msg->ranges[ii] < 0.7 ) //some spurious appear at this range
+            laser_data_[laser_id].ranges_raw_[ii] = _msg->range_max;
+        else
+            laser_data_[laser_id].ranges_raw_[ii] = _msg->ranges[ii];
+    }
+    
+    //set params
+    laser_data_[laser_id].params_.angle_min_ = (laserscanutils::ScalarT)_msg->angle_min;
+    laser_data_[laser_id].params_.angle_max_ = (laserscanutils::ScalarT)_msg->angle_max;
+    laser_data_[laser_id].params_.angle_step_ = (laserscanutils::ScalarT)_msg->angle_increment;
+    laser_data_[laser_id].params_.scan_time_ = (laserscanutils::ScalarT)_msg->scan_time;
+    laser_data_[laser_id].params_.range_min_ = (laserscanutils::ScalarT)_msg->range_min;
+    //laser_data_[laser_id].params_.range_max_ = (laserscanutils::ScalarT)_msg->range_max;
+    //laser_data_[laser_id].params_.range_max_ = hough_params_.range_max_; //TODO to think !!
+    laser_data_[laser_id].params_.range_max_ = 30; //TODO: Set it somewhere out of here!
+    laser_data_[laser_id].params_.range_std_dev_ = 0.01;//TODO: Set it somewhere out of here!
+
+    //process raw 
+    //laser_data_[laser_id].ranges2xy(laser_data_[laser_id].params_ , laser_mounting_points_.at(laser_id));
+    laser_data_[laser_id].processRaw(laser_data_[laser_id].params_ , false, 1, laser_mounting_points_.at(laser_id));
+    //laser_data_[laser_id].processRaw(laser_data_[laser_id].params_ , false, 1);
+   
+}
+
+void LocalMapNode::radarCallback(const cargo_ants_msgs::ObjectTrackAtSdfArray::ConstPtr& _msg)
+{
+    //TODO
+}

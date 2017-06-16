@@ -1,0 +1,45 @@
+2016-05-06 19:40:42 Error: [ForbiddenException] Study Session Already in Progress
+Request URL: /studies/otf/1
+Stack Trace:
+#0 [internal function]: StudiesController->otf('1')
+#1 /usr/share/php/Cake/Controller/Controller.php(490): ReflectionMethod->invokeArgs(Object(StudiesController), Array)
+#2 /usr/share/php/Cake/Routing/Dispatcher.php(193): Controller->invokeAction(Object(CakeRequest))
+#3 /usr/share/php/Cake/Routing/Dispatcher.php(167): Dispatcher->_invoke(Object(StudiesController), Object(CakeRequest))
+#4 /home/cargoants/Documents/poftwaresatent_hhcoaching/hhcoaching/Jenni/catkin_ws/src/cargo-ants-libs/rms/app/webroot/index.php(75): Dispatcher->dispatch(Object(CakeRequest), Object(CakeResponse))
+#5 {main}
+2016-05-06 19:41:23 Error: [ForbiddenException] Study Session Already in Progress
+Request URL: /studies/otf/1
+Stack Trace:
+#0 [internal function]: StudiesController->otf('1')
+#1 /usr/share/php/Cake/Controller/Controller.php(490): ReflectionMethod->invokeArgs(Object(StudiesController), Array)
+#2 /usr/share/php/Cake/Routing/Dispatcher.php(193): Controller->invokeAction(Object(CakeRequest))
+#3 /usr/share/php/Cake/Routing/Dispatcher.php(167): Dispatcher->_invoke(Object(StudiesController), Object(CakeRequest))
+#4 /home/cargoants/Documents/poftwaresatent_hhcoaching/hhcoaching/Jenni/catkin_ws/src/cargo-ants-libs/rms/app/webroot/index.php(75): Dispatcher->dispatch(Object(CakeRequest), Object(CakeResponse))
+#5 {main}
+2016-05-06 19:45:55 Error: [NotFoundException] Invalid interface.
+Request URL: /ifaces/view/2/1
+Stack Trace:
+#0 [internal function]: IfacesController->view('2', '1')
+#1 /usr/share/php/Cake/Controller/Controller.php(490): ReflectionMethod->invokeArgs(Object(IfacesController), Array)
+#2 /usr/share/php/Cake/Routing/Dispatcher.php(193): Controller->invokeAction(Object(CakeRequest))
+#3 /usr/share/php/Cake/Routing/Dispatcher.php(167): Dispatcher->_invoke(Object(IfacesController), Object(CakeRequest))
+#4 /home/cargoants/Documents/poftwaresatent_hhcoaching/hhcoaching/Jenni/catkin_ws/src/cargo-ants-libs/rms/app/webroot/index.php(75): Dispatcher->dispatch(Object(CakeRequest), Object(CakeResponse))
+#5 {main}
+2016-05-10 20:05:21 Error: [MissingControllerException] Controller class NzYyMDg3OTQ5MjY4Lzc2MjA4OTE0MjMzNC8wYTZyNWhiOGp0Controller could not be found.
+Exception Attributes: array (
+  'class' => 'NzYyMDg3OTQ5MjY4Lzc2MjA4OTE0MjMzNC8wYTZyNWhiOGp0Controller',
+  'plugin' => NULL,
+)
+Request URL: /NzYyMDg3OTQ5MjY4Lzc2MjA4OTE0MjMzNC8wYTZyNWhiOGp0
+Stack Trace:
+#0 /home/cargoants/Documents/poftwaresatent_hhcoaching/hhcoaching/Jenni/catkin_ws/src/cargo-ants-libs/rms/app/webroot/index.php(75): Dispatcher->dispatch(Object(CakeRequest), Object(CakeResponse))
+#1 {main}
+2016-05-10 20:05:36 Error: [MissingControllerException] Controller class ODM5NzI2NzA3NDk0LzgzOTcyNzkwMDU2MC8wcXp3Y2VwMWd4Controller could not be found.
+Exception Attributes: array (
+  'class' => 'ODM5NzI2NzA3NDk0LzgzOTcyNzkwMDU2MC8wcXp3Y2VwMWd4Controller',
+  'plugin' => NULL,
+)
+Request URL: /ODM5NzI2NzA3NDk0LzgzOTcyNzkwMDU2MC8wcXp3Y2VwMWd4
+Stack Trace:
+#0 /home/cargoants/Documents/poftwaresatent_hhcoaching/hhcoaching/Jenni/catkin_ws/src/cargo-ants-libs/rms/app/webroot/index.php(75): Dispatcher->dispatch(Object(CakeRequest), Object(CakeResponse))
+#1 {main}

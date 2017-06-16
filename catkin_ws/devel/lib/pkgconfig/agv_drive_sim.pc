@@ -1,0 +1,8 @@
+prefix=/home/jendav/catkin_ws/devel
+
+Name: agv_drive_sim
+Description: Description of agv_drive_sim
+Version: 0.0.0
+Cflags: 
+Libs: -L/home/jendav/catkin_ws/devel/lib 
+Requires: cargo_ants_msgs roscpp rospy std_msgs

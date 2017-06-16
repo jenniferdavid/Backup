@@ -1,0 +1,8 @@
+prefix=/home/jendav/catkin_ws/devel
+
+Name: cargo_ants_local_mapping
+Description: Description of cargo_ants_local_mapping
+Version: 1.0.0
+Cflags: -I/home/jendav/catkin_ws/devel/include -I/usr/local/include/iri-algorithms
+Libs: -L/home/jendav/catkin_ws/devel/lib 
+Requires: roscpp rospy std_msgs nav_msgs sensor_msgs dynamic_reconfigure tf cargo_ants_msgs

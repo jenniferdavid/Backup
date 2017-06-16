@@ -1,0 +1,352 @@
+Panels:
+  - Class: rviz/Displays
+    Help Height: 78
+    Name: Displays
+    Property Tree Widget:
+      Expanded:
+        - /Global Options1
+        - /RobotModel1
+        - /Odometry1
+      Splitter Ratio: 0.5
+    Tree Height: 889
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Alpha: 0.5
+      Cell Size: 1
+      Class: rviz/Grid
+      Color: 160; 160; 164
+      Enabled: true
+      Line Style:
+        Line Width: 0.03
+        Value: Lines
+      Name: Grid
+      Normal Cell Count: 0
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Plane: XY
+      Plane Cell Count: 10
+      Reference Frame: <Fixed Frame>
+      Value: true
+    - Alpha: 0.7
+      Class: rviz/Map
+      Color Scheme: map
+      Draw Behind: false
+      Enabled: true
+      Name: Map
+      Topic: ""
+      Unreliable: false
+      Value: true
+    - Alpha: 1
+      Class: rviz/RobotModel
+      Collision Enabled: false
+      Enabled: true
+      Links:
+        All Links Enabled: true
+        Expand Joint Details: false
+        Expand Link Details: false
+        Expand Tree: false
+        Link Tree Style: Links in Alphabetic Order
+        at_base_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+        at_bl_hinge:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        at_bl_wheel:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        at_br_hinge:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        at_br_wheel:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        at_cam:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        at_chassis:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        at_fl_hinge:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        at_fl_wheel:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        at_footprint:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        at_fr_hinge:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        at_fr_wheel:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        at_lidar0:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        at_lidar2:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        at_lidar3:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        at_platform:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+      Name: RobotModel
+      Robot Description: robot_description
+      TF Prefix: ""
+      Update Interval: 0
+      Value: true
+      Visual Enabled: true
+    - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 10
+        Min Value: -10
+        Value: true
+      Axis: Z
+      Channel Name: intensity
+      Class: rviz/LaserScan
+      Color: 255; 255; 255
+      Color Transformer: Intensity
+      Decay Time: 0
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Max Intensity: 999999
+      Min Color: 0; 0; 0
+      Min Intensity: 0
+      Name: LaserScan
+      Position Transformer: XYZ
+      Queue Size: 10
+      Selectable: true
+      Size (Pixels): 3
+      Size (m): 0.01
+      Style: Flat Squares
+      Topic: /at/lidar0
+      Unreliable: false
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: true
+    - Angle Tolerance: 0.1
+      Class: rviz/Odometry
+      Color: 255; 25; 0
+      Enabled: true
+      Keep: 100
+      Length: 1
+      Name: Odometry
+      Position Tolerance: 0.1
+      Topic: /at/ground_truth
+      Value: true
+    - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 10
+        Min Value: -10
+        Value: true
+      Axis: Z
+      Channel Name: intensity
+      Class: rviz/LaserScan
+      Color: 255; 255; 255
+      Color Transformer: Intensity
+      Decay Time: 0
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Max Intensity: 999999
+      Min Color: 0; 0; 0
+      Min Intensity: 0
+      Name: LaserScan
+      Position Transformer: XYZ
+      Queue Size: 10
+      Selectable: true
+      Size (Pixels): 3
+      Size (m): 0.01
+      Style: Flat Squares
+      Topic: /at/lidar2
+      Unreliable: false
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: true
+    - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 10
+        Min Value: -10
+        Value: true
+      Axis: Z
+      Channel Name: intensity
+      Class: rviz/LaserScan
+      Color: 255; 255; 255
+      Color Transformer: Intensity
+      Decay Time: 0
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Max Intensity: 999999
+      Min Color: 0; 0; 0
+      Min Intensity: 0
+      Name: LaserScan
+      Position Transformer: XYZ
+      Queue Size: 10
+      Selectable: true
+      Size (Pixels): 3
+      Size (m): 0.01
+      Style: Flat Squares
+      Topic: /at/lidar3
+      Unreliable: false
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: true
+    - Class: rviz/TF
+      Enabled: true
+      Frame Timeout: 15
+      Frames:
+        All Enabled: true
+        at_base_link:
+          Value: true
+        at_bl_hinge:
+          Value: true
+        at_bl_wheel:
+          Value: true
+        at_br_hinge:
+          Value: true
+        at_br_wheel:
+          Value: true
+        at_cam:
+          Value: true
+        at_chassis:
+          Value: true
+        at_fl_hinge:
+          Value: true
+        at_fl_wheel:
+          Value: true
+        at_footprint:
+          Value: true
+        at_fr_hinge:
+          Value: true
+        at_fr_wheel:
+          Value: true
+        at_lidar0:
+          Value: true
+        at_lidar2:
+          Value: true
+        at_lidar3:
+          Value: true
+        at_platform:
+          Value: true
+      Marker Scale: 1
+      Name: TF
+      Show Arrows: true
+      Show Axes: true
+      Show Names: true
+      Tree:
+        at_footprint:
+          at_base_link:
+            at_platform:
+              at_bl_hinge:
+                at_bl_wheel:
+                  {}
+              at_br_hinge:
+                at_br_wheel:
+                  {}
+              at_cam:
+                {}
+              at_chassis:
+                {}
+              at_fl_hinge:
+                at_fl_wheel:
+                  {}
+              at_fr_hinge:
+                at_fr_wheel:
+                  {}
+              at_lidar0:
+                {}
+              at_lidar2:
+                {}
+              at_lidar3:
+                {}
+      Update Interval: 0
+      Value: true
+  Enabled: true
+  Global Options:
+    Background Color: 48; 48; 48
+    Fixed Frame: at_footprint
+    Frame Rate: 30
+  Name: root
+  Tools:
+    - Class: rviz/MoveCamera
+    - Class: rviz/Interact
+      Hide Inactive Objects: true
+    - Class: rviz/Select
+    - Class: rviz/SetInitialPose
+      Topic: initialpose
+    - Class: rviz/SetGoal
+      Topic: goal
+  Value: true
+  Views:
+    Current:
+      Class: rviz/Orbit
+      Distance: 12.6928
+      Enable Stereo Rendering:
+        Stereo Eye Separation: 0.06
+        Stereo Focal Distance: 1
+        Swap Stereo Eyes: false
+        Value: false
+      Focal Point:
+        X: 0
+        Y: 0
+        Z: 0
+      Name: Current View
+      Near Clip Distance: 0.01
+      Pitch: 0.429797
+      Target Frame: <Fixed Frame>
+      Value: Orbit (rviz)
+      Yaw: 5.8086
+    Saved: ~
+Window Geometry:
+  Displays:
+    collapsed: false
+  Height: 1102
+  Hide Left Dock: false
+  Hide Right Dock: false
+  QMainWindow State: 000000ff00000000fd0000000100000000000001eb00000408fc0200000001fb000000100044006900730070006c006100790073010000002800000408000000dd00ffffff000003040000040800000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  Width: 1269
+  X: 2919
+  Y: 14

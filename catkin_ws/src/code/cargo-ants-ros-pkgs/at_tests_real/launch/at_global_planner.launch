@@ -1,0 +1,67 @@
+<!-- Test AT global navigation: global path planner + local planner + local mapping -->
+<launch>
+
+    <!-- Setting Args -->  
+    <arg name="plots" default="false" />
+    <arg name="rviz" default="false" />
+    <arg name="gazebo_gui" default="true" />
+    <!-- arg name="world_model"  default="empty" / -->
+    <!-- arg name="world_model"  default="ground_with_barrel" / -->
+    <arg name="world_model"  default="ground_with_barrel" />    
+    <arg name="robot_model"  default="agv_iri" />    
+    <!-- arg name="map_file" default="$(find cargo_ants_path_planner)/maps/agv_map.yaml"/ -->
+    <arg name="map_file" default="$(find cargo_ants_path_planner)/maps/storaholm.yaml"/>    
+    <arg name="base_frame_id"   default="at_base_link"/>
+    <arg name="global_frame_id" default="map"/> 
+      
+    
+   <!-- MAP SERVER: Map server publishes the global map -->
+   <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)" />
+  
+  
+   <!-- Publish TF (to be be removed when a localization process is running, i.e. when map to odom TF is already published) -->  
+   <node pkg="tf" type="static_transform_publisher" name="map2odom" args="-2 -6 0 0 0 0 /map /odom 100"/> 
+   <node pkg="tf" type="static_transform_publisher" name="odom2base_link" args="-2 -6 0 0 0 0 /odom /at_base_link 100"/> 
+   <node pkg="tf" type="static_transform_publisher" name="baselink" args="0 0 0 0 0 0 /at_base_link base_link 100"/> 
+ 
+ 
+
+   <!-- MOVE_BASE: Launches move_base node but we will use only the Global Planner (E* is used as a move_base's plugin) -->
+   <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
+		<rosparam file="$(find cargo_ants_path_planner)/launch/params/at_costmap_common_params.yaml" command="load" ns="global_costmap" />   
+		<rosparam file="$(find cargo_ants_path_planner)/launch/params/at_global_costmap_params.yaml" command="load" />    
+		<param name="global_costmap/global_frame" value="$(arg global_frame_id)"/>
+		<param name="global_costmap/robot_base_frame" value="$(arg base_frame_id)"/>
+		<rosparam file="$(find cargo_ants_path_planner)/launch/params/at_global_planner_params.yaml" command="load" />
+		<rosparam file="$(find cargo_ants_path_planner)/launch/params/at_move_base_params.yaml" command="load" />    
+   </node>
+ 
+    <!-- PROCESS PLAN: Catches the global path from move_base node and process it: 
+         It should  (filter) divide the path in parts and publish each part with CargoANTs msgs, 
+         then each part should be received by the path_adaptor node (CHOMP) to avoid new obstacles and send it to the Vehicle.  -->
+ 
+   <node name="process_plan_node" pkg="cargo_ants_path_planner" type="process_plan_node" output="screen" /> 
+ 
+     
+    <node   
+        name="path_adaptore" 
+        pkg="cargo_ants_pa" 
+        type="at_empty"
+        args=""
+        output="screen">
+        <remap 
+            from="/obstacles"
+            to= "/$(env ROBOT)/local_mapping/obstacle_map"/>
+    </node>-->
+
+   <!-- AT Actuators (send trajetory to AutoBox) -->
+    <include file="$(find at_tests_real)/launch/at_actuators.launch">
+    </include>     
+     
+ 
+   <!-- Launch Rviz -->
+   <node name="RViz" pkg="rviz" type="rviz" output="screen" args="-d $(find cargo_ants_path_planner)/rviz/rviz-gnav.rviz" />
+ 
+    
+    
+</launch>

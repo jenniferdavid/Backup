@@ -1,0 +1,54 @@
+<launch>
+
+    <!-- User Args  -->
+    <arg name="bag_file_name" default="Volvo/2016-06-21-16-44-23.bag" /> 
+    <arg name="model" default="$(find at_description)/urdf/at.xacro"/> 
+    <arg name="rviz" default="true" /> 
+    <arg name="use_auto_diff_wrapper" default="true" />	
+    <arg name="speed" default="1" />	
+    
+    <!-- Set use_sim_time parameter in the parameter server-->
+    <param name="use_sim_time" value="true" />
+    
+    <!--Play the rosbag -->
+    <node pkg="rosbag"
+        type="play"
+        name="rosbag"
+        args="-r $(arg speed) --pause --clock $(env DATASET_PATH)/$(arg bag_file_name)">
+    </node>
+    
+    <!--WOLF-->
+    <node name="wolf_polylines"
+        pkg="wolf_ros"
+        type="wolf_polylines"
+        output="screen">
+        <param name="publish_features" value="true"/>
+        <param name="filter_scans" value="true"/>
+        <param name="use_auto_diff_wrapper" value="$(arg use_auto_diff_wrapper)"/>
+        <param name="n_lasers" value="1"/>
+        <param name="range_segment_th" value="1"/>
+        <param name="range_defined_th" value="5"/>
+        <param name="time_tolerance" value="0.3"/>
+        <param name="position_error_th" value="2"/>
+        <param name="new_features_th" value="10"/>
+        <param name="loop_frames_th" value="5"/>
+        <param name="max_iterations" value="10"/>
+        <param name="odometry_translational_cov_factor" value="1"/>
+        <param name="odometry_rotational_cov_factor" value="1"/>
+        <param name="dist_traveled_th" value="3"/>
+        <param name="elapsed_time_th" value="20"/>
+        <param name="laser_0_frame_name" value="at_front_ibeo"/>
+        <remap from="~odometry" to="/at_udp2ros_sdf/odom"/>
+        <remap from="~laser_0" to="/at_udp2ros_ibeo/scan_4"/>
+        <param name="~base_frame_name" value="at_base_link"/>
+    </node>
+    
+    <!--RESULTS VISUALIZATION-->
+    <group if="$(arg rviz)">
+        <node name="rviz"
+            pkg="rviz"
+            type="rviz" 
+            args="-d $(find wolf_ros)/config/at_wolf_polylines_test.rviz" />
+    </group>
+
+</launch>

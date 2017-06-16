@@ -1,0 +1,24 @@
+<!-- Launches at sensors and rosbag record -->
+
+<launch>
+
+	<!-- User Args  -->
+	<arg name="rviz" default="true" />  <!-- rviz visualization or not  -->
+	<arg name="camera" default="false" /> 
+    
+	<!-- AT sensors -->
+	<include file="$(find at_tests_real)/launch/at_sensors.launch">
+        	<arg name="rviz" value="$(arg rviz)"/>
+        	<arg name="truck" value="true"/> 
+        	<arg name="camera" value="$(arg camera)"/> 
+	</include>
+
+	<!-- rosbag record -->
+	<node	pkg="rosbag"
+		type="record"
+		name="rosbag_record"
+		args="rosbag record -a -x (.*)/compressed(.*)|(.*)/theora(.*)|(.*)/markers -o /home/cargoants/Desktop/">
+	</node>
+
+</launch>
+
